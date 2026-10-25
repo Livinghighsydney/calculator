@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.sqlite3
+.venv/
+venv/
+
+# Node
+node_modules/
+dist/
+.next/
+
+# Environment — never commit secrets
+.env
+.env.local
+.env.*.local
+
+# Business / internal docs
+docs/*.docx
+docs/*.pdf
+
+# One-off screenshots / scratch files at repo root
+cal.png
+issue.png
+D:calculatordoc_content.txt
+
+# Claude Code internal state
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+dev-server.log
+
+# IDE
+.vscode/
+.idea/

@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+tortoise-orm[asyncpg]
+aiosqlite
+anthropic
+python-dotenv
+httpx
+pydantic-settings
+aerich
