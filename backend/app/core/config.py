@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     kb_api_url: str = "https://api.livinghigh.com.au"
     kb_email: str = ""
     kb_password: str = ""
-    pricing_image_path: Path = Path(__file__).parents[3] / "docs" / "image3.jpeg"
+    pricing_image_path: Path = Path(__file__).parents[2] / "docs" / "image3.jpeg"
 
     model_config = {"env_file": ".env"}
 
