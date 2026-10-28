@@ -15,7 +15,6 @@ async def calculate_price(req: PricingRequest):
     return PricingResponse(
         recommended_price=engine_result["recommended_price"],
         price_range=engine_result["price_range"],
-        position_score=engine_result["position_score"],
         breakdown=engine_result["breakdown"],
         ai_summary=ai_summary,
     )

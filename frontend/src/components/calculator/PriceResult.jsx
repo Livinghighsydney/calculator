@@ -16,7 +16,7 @@ export default function PriceResult({ result }) {
           <span className="text-body-lg text-zinc-400">/ week</span>
         </div>
         <p className="text-body-sm text-zinc-400 mt-1.5">
-          Range: ${result.price_range.min}–${result.price_range.max} / week
+          Base range: ${result.price_range.min}–${result.price_range.max} / week
         </p>
       </Card>
 

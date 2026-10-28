@@ -25,7 +25,6 @@ class BreakdownRow(BaseModel):
 
 class PricingResponse(BaseModel):
     recommended_price: int
-    price_range: dict       # { min, max }
-    position_score: float   # 0.0–1.0, for transparency
+    price_range: dict       # { min, max } — the base type range; final price can exceed max
     breakdown: list[BreakdownRow]
     ai_summary: str

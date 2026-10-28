@@ -8,12 +8,20 @@ RANGES = {
     "studio":              {"summer": (420, 470), "winter": (375, 420)},
 }
 
-SIZE_BASE = {"small": 0.20, "medium": 0.50, "large": 0.80}
+# Size anchors the base price: small = range floor, medium = midpoint, large = ceiling
+SIZE_POSITION = {"small": 0.0, "medium": 0.5, "large": 1.0}
 
-LOCATION_DEMAND_NUDGE = {"high": 0.15, "average": 0.0, "low": -0.15}
-
-LARGE_BATCH_PENALTY = 20
-BALCONY_PREMIUM = 20
+# All remaining factors are flat dollar adjustments stacked on top of the base price.
+# This lets premium combinations push above the range ceiling, which the old
+# position-within-range approach could never do.
+LOCATION_ADJ   = {"high": 25,  "average": 0,   "low": -25}
+QUALITY_ADJ    = {"modern": 15, "older": -15}
+BALCONY_ADJ          =  20
+VERY_OLD_ADJ         = -30
+POOR_BATHROOM_ADJ    = -20
+CLEVELAND_ST_ADJ     = -20
+LARGE_HOUSE_ADJ      = -15
+LARGE_BATCH_ADJ      = -20
 
 
 def get_season(month: int | None = None) -> str:
@@ -22,7 +30,11 @@ def get_season(month: int | None = None) -> str:
 
 
 def _round5(v: float) -> int:
-    return round(v / 5) * 5
+    return int(round(v / 5) * 5)
+
+
+def _fmt(adj: int) -> str:
+    return f"+${adj}" if adj > 0 else f"−${abs(adj)}"
 
 
 def calculate(req: PricingRequest) -> dict:
@@ -32,7 +44,7 @@ def calculate(req: PricingRequest) -> dict:
 
     breakdown: list[BreakdownRow] = []
 
-    # Season + room type set the range
+    # Season + room type establish the base range
     breakdown.append(BreakdownRow(
         factor="Season",
         finding=f"{'Summer' if season == 'summer' else 'Winter'} ({date.today().strftime('%B')})",
@@ -44,69 +56,70 @@ def calculate(req: PricingRequest) -> dict:
         effect="Tier set"
     ))
 
-    # Room size — primary position driver
-    position = SIZE_BASE[req.size]
-    size_label = {"small": "Bottom third", "medium": "Mid-range", "large": "Top third"}[req.size]
-    breakdown.append(BreakdownRow(factor="Room Size", finding=req.size.title(), effect=size_label))
+    # Size anchors the starting price within the range
+    base_price = _round5(range_min + SIZE_POSITION[req.size] * span)
+    size_effect = {
+        "small":  f"${base_price} (range floor)",
+        "medium": f"${base_price} (midpoint)",
+        "large":  f"${base_price} (range ceiling)",
+    }[req.size]
+    breakdown.append(BreakdownRow(factor="Room Size", finding=req.size.title(), effect=size_effect))
 
-    # Location demand — staff-set, replaces hardcoded suburb tiers
-    demand = req.location_demand
-    location_nudge = LOCATION_DEMAND_NUDGE.get(demand, 0.0)
-    position += location_nudge
-    demand_label = {"high": "High demand area ↑", "average": "Average demand", "low": "Lower demand area ↓"}[demand]
-    breakdown.append(BreakdownRow(
-        factor="Location",
-        finding=demand.title() + " demand",
-        effect=demand_label
-    ))
+    price = base_price
 
-    # Quality — adjusts ±0.10
-    quality_nudge = 0.10 if req.quality == "modern" else -0.10
-    position += quality_nudge
+    # Flat adjustments — can push price above or below the base range
+    loc_adj = LOCATION_ADJ.get(req.location_demand, 0)
+    if loc_adj != 0:
+        price += loc_adj
+        breakdown.append(BreakdownRow(
+            factor="Location",
+            finding=req.location_demand.title() + " demand",
+            effect=_fmt(loc_adj)
+        ))
+    else:
+        breakdown.append(BreakdownRow(factor="Location", finding="Average demand", effect="No adjustment"))
+
+    q_adj = QUALITY_ADJ[req.quality]
+    price += q_adj
     breakdown.append(BreakdownRow(
         factor="House Quality",
         finding="Modern" if req.quality == "modern" else "Older style",
-        effect="Pushes higher ↑" if quality_nudge > 0 else "Pushes lower ↓"
+        effect=_fmt(q_adj)
     ))
 
-    # House flags — position-based
-    if req.very_old:
-        position -= 0.20
-        breakdown.append(BreakdownRow(factor="Building Condition", finding="Very old / deteriorating", effect="Significantly lower ↓↓"))
-    if req.poor_bathroom_ratio:
-        position -= 0.15
-        breakdown.append(BreakdownRow(factor="Bathroom Ratio", finding="5+ rooms per bathroom", effect="Pushes lower ↓"))
-    if req.cleveland_st:
-        position -= 0.15
-        breakdown.append(BreakdownRow(factor="Cleveland St", finding="Yes", effect="Older boarding house ↓"))
-    if req.large_house:
-        position -= 0.10
-        breakdown.append(BreakdownRow(factor="20+ Room House", finding="Yes", effect="Large communal house ↓"))
-
-    position = max(0.0, min(1.0, position))
-    price = _round5(range_min + position * span)
-
-    # Balcony — flat premium on top of range positioning
     if req.balcony:
-        price += BALCONY_PREMIUM
-        breakdown.append(BreakdownRow(factor="Balcony", finding="Yes", effect=f"+${BALCONY_PREMIUM} outdoor premium ↑"))
+        price += BALCONY_ADJ
+        breakdown.append(BreakdownRow(factor="Balcony", finding="Yes", effect=_fmt(BALCONY_ADJ)))
 
-    # Large batch penalty — applied last, floored at range minimum
+    if req.very_old:
+        price += VERY_OLD_ADJ
+        breakdown.append(BreakdownRow(factor="Building Condition", finding="Very old / deteriorating", effect=_fmt(VERY_OLD_ADJ)))
+
+    if req.poor_bathroom_ratio:
+        price += POOR_BATHROOM_ADJ
+        breakdown.append(BreakdownRow(factor="Bathroom Ratio", finding="5+ rooms per bathroom", effect=_fmt(POOR_BATHROOM_ADJ)))
+
+    if req.cleveland_st:
+        price += CLEVELAND_ST_ADJ
+        breakdown.append(BreakdownRow(factor="Cleveland St", finding="Yes", effect=_fmt(CLEVELAND_ST_ADJ)))
+
+    if req.large_house:
+        price += LARGE_HOUSE_ADJ
+        breakdown.append(BreakdownRow(factor="20+ Room House", finding="Yes", effect=_fmt(LARGE_HOUSE_ADJ)))
+
     if req.large_batch:
-        price -= LARGE_BATCH_PENALTY
-        price = max(price, range_min)
+        price += LARGE_BATCH_ADJ
         breakdown.append(BreakdownRow(
             factor="Vacancy Load",
             finding="Large batch",
-            effect=f"−${LARGE_BATCH_PENALTY} to fill faster"
+            effect=f"{_fmt(LARGE_BATCH_ADJ)} to fill faster"
         ))
     else:
         breakdown.append(BreakdownRow(factor="Vacancy Load", finding="Normal batch", effect="No adjustment"))
 
     return {
-        "recommended_price": price,
+        "recommended_price": _round5(price),
         "price_range": {"min": range_min, "max": range_max},
-        "position_score": round(position, 2),
         "breakdown": breakdown,
         "season": season,
     }
