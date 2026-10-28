@@ -8,15 +8,12 @@ RANGES = {
     "studio":              {"summer": (420, 470), "winter": (375, 420)},
 }
 
-SUBURB_TIERS = {
-    "surry_hills": "high", "redfern": "high", "chippendale": "high",
-    "neutral_bay": "low",
-}
-
-# Size sets the BASE position within the range — the doc says this is the primary driver
 SIZE_BASE = {"small": 0.20, "medium": 0.50, "large": 0.80}
 
+LOCATION_DEMAND_NUDGE = {"high": 0.15, "average": 0.0, "low": -0.15}
+
 LARGE_BATCH_PENALTY = 20
+BALCONY_PREMIUM = 20
 
 
 def get_season(month: int | None = None) -> str:
@@ -52,14 +49,15 @@ def calculate(req: PricingRequest) -> dict:
     size_label = {"small": "Bottom third", "medium": "Mid-range", "large": "Top third"}[req.size]
     breakdown.append(BreakdownRow(factor="Room Size", finding=req.size.title(), effect=size_label))
 
-    # Suburb — adjusts ±0.15 within the size band
-    tier = SUBURB_TIERS.get(req.suburb, "average")
-    suburb_nudge = {"high": 0.15, "average": 0.0, "low": -0.15}[tier]
-    position += suburb_nudge
+    # Location demand — staff-set, replaces hardcoded suburb tiers
+    demand = req.location_demand
+    location_nudge = LOCATION_DEMAND_NUDGE.get(demand, 0.0)
+    position += location_nudge
+    demand_label = {"high": "High demand area ↑", "average": "Average demand", "low": "Lower demand area ↓"}[demand]
     breakdown.append(BreakdownRow(
-        factor="Suburb",
-        finding=f"{req.suburb.replace('_', ' ').title()} ({tier} demand)",
-        effect="Higher end ↑" if suburb_nudge > 0 else ("Lower end ↓" if suburb_nudge < 0 else "Middle of range")
+        factor="Location",
+        finding=demand.title() + " demand",
+        effect=demand_label
     ))
 
     # Quality — adjusts ±0.10
@@ -71,7 +69,13 @@ def calculate(req: PricingRequest) -> dict:
         effect="Pushes higher ↑" if quality_nudge > 0 else "Pushes lower ↓"
     ))
 
-    # House flags
+    # House flags — position-based
+    if req.very_old:
+        position -= 0.20
+        breakdown.append(BreakdownRow(factor="Building Condition", finding="Very old / deteriorating", effect="Significantly lower ↓↓"))
+    if req.poor_bathroom_ratio:
+        position -= 0.15
+        breakdown.append(BreakdownRow(factor="Bathroom Ratio", finding="5+ rooms per bathroom", effect="Pushes lower ↓"))
     if req.cleveland_st:
         position -= 0.15
         breakdown.append(BreakdownRow(factor="Cleveland St", finding="Yes", effect="Older boarding house ↓"))
@@ -82,9 +86,15 @@ def calculate(req: PricingRequest) -> dict:
     position = max(0.0, min(1.0, position))
     price = _round5(range_min + position * span)
 
-    # Large batch penalty after range positioning
+    # Balcony — flat premium on top of range positioning
+    if req.balcony:
+        price += BALCONY_PREMIUM
+        breakdown.append(BreakdownRow(factor="Balcony", finding="Yes", effect=f"+${BALCONY_PREMIUM} outdoor premium ↑"))
+
+    # Large batch penalty — applied last, floored at range minimum
     if req.large_batch:
         price -= LARGE_BATCH_PENALTY
+        price = max(price, range_min)
         breakdown.append(BreakdownRow(
             factor="Vacancy Load",
             finding="Large batch",

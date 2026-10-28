@@ -13,14 +13,17 @@ Do not use outside knowledge about Sydney rents.
 The rules engine has already calculated the price. Your job is to explain it clearly.
 
 INPUTS:
-  Room type:     {req.room_type.replace("_", " ").title()}
-  Season:        {r["season"].title()}
-  Suburb:        {req.suburb.replace("_", " ").title()}
-  Room size:     {req.size.title()}
-  House quality: {req.quality.title()}
-  Cleveland St:  {"Yes" if req.cleveland_st else "No"}
-  20+ rooms:     {"Yes" if req.large_house else "No"}
-  Large batch:   {"Yes" if req.large_batch else "No"}
+  Room type:        {req.room_type.replace("_", " ").title()}
+  Season:           {r["season"].title()}
+  Location demand:  {req.location_demand.title()}
+  Room size:        {req.size.title()}
+  House quality:    {req.quality.title()}
+  Balcony:          {"Yes" if req.balcony else "No"}
+  Very old building:{"Yes" if req.very_old else "No"}
+  Poor bathroom ratio: {"Yes" if req.poor_bathroom_ratio else "No"}
+  Cleveland St:     {"Yes" if req.cleveland_st else "No"}
+  20+ rooms:        {"Yes" if req.large_house else "No"}
+  Large batch:      {"Yes" if req.large_batch else "No"}
 
 RULES ENGINE RESULT:
   Base range:    ${r["price_range"]["min"]}–${r["price_range"]["max"]}/week

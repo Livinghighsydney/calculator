@@ -67,7 +67,7 @@ export default function Calculator() {
               <div className="flex flex-col gap-4">
                 <PriceResult result={result} />
                 {!competitors && (
-                  <CompetitorToggle onSearch={() => search(lastForm)} loading={compLoading} />
+                  <CompetitorToggle onSearch={(suburb) => search(lastForm.roomType, suburb)} loading={compLoading} />
                 )}
                 {competitors && <CompetitorTable competitors={competitors} yourPrice={result.recommended_price} />}
               </div>

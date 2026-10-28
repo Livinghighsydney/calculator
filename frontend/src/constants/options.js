@@ -5,17 +5,10 @@ export const ROOM_TYPES = [
   { value: 'studio',              label: 'Studio',              description: 'Own bathroom and kitchenette inside the room' },
 ]
 
-export const SUBURBS = [
-  { value: 'surry_hills', label: 'Surry Hills', tier: 'high' },
-  { value: 'redfern', label: 'Redfern', tier: 'high' },
-  { value: 'chippendale', label: 'Chippendale', tier: 'high' },
-  { value: 'neutral_bay', label: 'Neutral Bay', tier: 'low' },
-  { value: 'glebe', label: 'Glebe', tier: 'average' },
-  { value: 'newtown', label: 'Newtown', tier: 'average' },
-  { value: 'ultimo', label: 'Ultimo', tier: 'average' },
-  { value: 'pyrmont', label: 'Pyrmont', tier: 'average' },
-  { value: 'haymarket', label: 'Haymarket', tier: 'average' },
-  { value: 'other', label: 'Other Sydney', tier: 'average' },
+export const LOCATION_DEMAND = [
+  { value: 'low',     label: 'Low' },
+  { value: 'average', label: 'Average' },
+  { value: 'high',    label: 'High' },
 ]
 
 export const SIZES = [

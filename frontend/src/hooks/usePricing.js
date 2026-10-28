@@ -12,16 +12,20 @@ export function usePricing() {
     setResult(null)
     try {
       const payload = {
-        room_type:    formData.roomType,
-        suburb:       formData.suburb,
-        size:         formData.size,
-        quality:      formData.quality,
-        cleveland_st: formData.clevelandSt,
-        large_house:  formData.largeHouse,
-        large_batch:  formData.largeBatch,
+        room_type:           formData.roomType,
+        location_demand:     formData.locationDemand,
+        size:                formData.size,
+        quality:             formData.quality,
+        balcony:             formData.balcony,
+        very_old:            formData.veryOld,
+        poor_bathroom_ratio: formData.poorBathroomRatio,
+        cleveland_st:        formData.clevelandSt,
+        large_house:         formData.largeHouse,
+        large_batch:         formData.largeBatch,
         empty_now: formData.emptyNow !== '' ? +formData.emptyNow : null,
         days_14:   formData.days14   !== '' ? +formData.days14   : null,
         days_28:   formData.days28   !== '' ? +formData.days28   : null,
+        month:     formData.month ?? null,
       }
       const { data } = await calculatePrice(payload)
       setResult(data)

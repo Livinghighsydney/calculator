@@ -6,13 +6,13 @@ export function useCompetitor() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const search = async (formData) => {
+  const search = async (roomType, suburb) => {
     setLoading(true)
     setError(null)
     try {
       const { data } = await fetchCompetitors({
-        room_type: formData.roomType,
-        suburb:    formData.suburb,
+        room_type: roomType,
+        suburb:    suburb || 'other',
       })
       setCompetitors(data.competitors)
     } catch (err) {
